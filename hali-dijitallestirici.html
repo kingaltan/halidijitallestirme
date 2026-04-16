@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Halı Dijitalleştirici</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f3ef;--surf:#fff;--s2:#f0ede8;--s3:#e8e3dc;
+  --b:rgba(0,0,0,.08);--b2:rgba(0,0,0,.15);
+  --gold:#a07828;--gold2:#7a5a1a;
+  --text:#1a1612;--t2:#5a4e42;--t3:#9a8e80;
+  --teal:#1d9a7a;--red:#c04a35;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+#hdr{display:flex;align-items:center;gap:16px;padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--b2);flex-shrink:0}
+#hdr h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:500;color:var(--gold2)}
+#hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* STEP NAV */
+#steps{display:flex;background:var(--surf);border-bottom:1px solid var(--b);padding:0 20px;flex-shrink:0;overflow-x:auto}
+.step{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;user-select:none;white-space:nowrap;opacity:.4;pointer-events:none}
+.step.unlock{opacity:1;pointer-events:auto}
+.step.active{opacity:1;pointer-events:auto;border-bottom-color:var(--gold)}
+.snum{width:20px;height:20px;border-radius:50%;background:var(--s2);border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--t3);transition:all .15s;flex-shrink:0}
+.step.active .snum{background:var(--gold);border-color:var(--gold);color:#fff}
+.step.done .snum{background:var(--teal);border-color:var(--teal);color:#fff}
+.step.done{opacity:1;pointer-events:auto}
+.slbl{font-size:12px;font-weight:500;color:var(--t2)}
+.step.active .slbl{color:var(--gold2)}
+.sarr{color:var(--b2);font-size:14px;padding:0 4px}
+
+/* LAYOUT */
+#layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+#sb{width:240px;min-width:220px;background:var(--surf);border-right:1px solid var(--b);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.stitle{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.card{background:var(--s2);border-radius:8px;padding:12px;border:1px solid var(--b)}
+
+/* CORNER ROWS */
+.crow{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:6px;border:1px solid var(--b);background:var(--surf);margin-bottom:4px;cursor:pointer;transition:all .13s;user-select:none}
+.crow:hover{border-color:var(--b2)}
+.crow.active{border-color:var(--gold);background:rgba(160,120,40,.06)}
+.crow.set{border-color:var(--teal);background:rgba(29,154,122,.04)}
+.crow.outside{border-color:#e0a052;background:rgba(224,160,82,.04)}
+.crow.ai-mode{border-color:#9370db;background:rgba(147,112,219,.04)}
+.cdot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.clbl{font-size:12px;font-weight:500;color:var(--t2);flex:1}
+.cval{font-size:10px;color:var(--t3);font-family:monospace}
+.ctag{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:500;flex-shrink:0}
+.ctag.set{background:rgba(29,154,122,.15);color:var(--teal)}
+.ctag.act{background:rgba(160,120,40,.15);color:var(--gold)}
+.ctag.out{background:rgba(224,160,82,.15);color:#a07020}
+.ctag.ai{background:rgba(147,112,219,.15);color:#7a52c0}
+
+/* BUTTONS */
+.btn{padding:7px 14px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;border:1px solid var(--b2);border-radius:6px;background:transparent;color:var(--t2);cursor:pointer;transition:all .13s;width:100%;text-align:center}
+.btn:hover{background:var(--s2);border-color:var(--gold);color:var(--text)}
+.btn.primary{background:var(--gold);color:#fff;border-color:var(--gold)}
+.btn.primary:hover{background:var(--gold2)}
+.btn.teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.teal:hover{opacity:.85}
+.btn.sm{padding:5px 10px;font-size:11px}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:rgba(192,74,53,.07)}
+.btn:disabled{opacity:.38;pointer-events:none}
+.btn-row{display:flex;gap:6px}
+
+.hint{background:rgba(160,120,40,.08);border:1px solid rgba(160,120,40,.2);border-radius:6px;padding:8px 11px;font-size:11px;color:var(--t2);line-height:1.6}
+.hint strong{color:var(--gold2)}
+
+/* CANVAS */
+#ca{flex:1;background:#1c1814;position:relative;overflow:hidden}
+#mc{display:block;width:100%;height:100%;cursor:crosshair}
+#st{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(15,12,8,.85);color:rgba(255,255,255,.9);padding:5px 14px;border-radius:16px;font-size:11px;pointer-events:none;white-space:nowrap;backdrop-filter:blur(6px);z-index:10}
+#zc{position:absolute;bottom:14px;left:14px;display:flex;gap:5px;z-index:10}
+.zb{width:30px;height:30px;border-radius:6px;background:var(--surf);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--t2);transition:all .13s}
+.zb:hover{border-color:var(--gold)}
+#zinfo{position:absolute;bottom:18px;left:112px;font-size:10px;color:rgba(255,255,255,.4);z-index:10}
+
+/* RESULT PANEL (step 2) */
+#rp2{display:none;position:absolute;inset:0;background:#1c1814;z-index:20;overflow:auto}
+#rp2-inner{display:grid;grid-template-columns:220px 1fr;height:100%}
+#rp2-sb{background:var(--surf);border-right:1px solid var(--b);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+#rp2-main{padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;background:var(--s2)}
+
+/* SLIDERS */
+.srow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.srow label{font-size:11px;color:var(--t2);min-width:80px}
+.srow input[type=range]{flex:1;height:4px;appearance:none;background:var(--b2);border-radius:2px;outline:none}
+.srow input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer}
+.srow .sv{font-size:11px;font-weight:500;color:var(--text);min-width:28px;text-align:right}
+input[type=number]{width:100%;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--s2);color:var(--text);border:1px solid var(--b2);border-radius:5px;outline:none}
+input[type=number]:focus{border-color:var(--gold)}
+
+/* CANVAS WRAP */
+.cv-wrap{background:var(--surf);border:1px solid var(--b);border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:140px;position:relative}
+.cv-lbl{position:absolute;top:6px;left:8px;font-size:9px;font-weight:500;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);background:var(--surf);padding:2px 6px;border-radius:3px;border:1px solid var(--b);z-index:5}
+.cv-wrap canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+
+/* STAT BOX */
+.stat-box{background:var(--s2);border-radius:7px;padding:10px 13px;text-align:center;border:1px solid var(--b)}
+.stat-box .val{font-size:18px;font-weight:500;color:var(--gold2)}
+.stat-box .lbl{font-size:10px;color:var(--t3);margin-top:2px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* SWATCHES */
+#swatches{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sw-item{display:flex;align-items:center;gap:6px;background:var(--surf);border:1px solid var(--b);border-radius:5px;padding:4px 9px;cursor:pointer;transition:border-color .13s}
+.sw-item:hover{border-color:var(--gold)}
+.sw-dot{width:16px;height:16px;border-radius:3px;border:1px solid rgba(0,0,0,.1);flex-shrink:0}
+.sw-hex{font-size:11px;font-family:monospace;color:var(--t2)}
+.sw-pct{font-size:10px;color:var(--t3)}
+.copy-b{font-size:9px;background:var(--gold);color:#fff;padding:1px 5px;border-radius:2px;font-weight:500;opacity:0;transition:opacity .13s}
+.sw-item:hover .copy-b{opacity:1}
+
+/* PROGRESS */
+#dp-prog{height:3px;background:var(--b2);border-radius:2px;margin-top:4px}
+#dp-prog-bar{height:100%;background:var(--teal);border-radius:2px;width:0;transition:width .25s}
+#dp-msg{font-size:11px;color:var(--t3);text-align:center;margin-top:4px;min-height:16px}
+
+/* NEXT BTN */
+.btn-next{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;font-size:13px;font-weight:500;background:var(--gold);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:all .15s}
+.btn-next:hover{background:var(--gold2)}
+.btn-next:disabled{opacity:.4;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <h1>Halı Dijitalleştirici</h1>
+  <div id="hdr-r">
+    <button class="btn sm" onclick="document.getElementById('fi').click()">+ Görsel Yükle</button>
+    <input type="file" id="fi" accept="image/*" style="display:none">
+  </div>
+</div>
+
+<!-- STEP NAV -->
+<div id="steps">
+  <div class="step active" id="sn0" onclick="goStep(0)">
+    <div class="snum">1</div><span class="slbl">Görsel Yükle & Köşe Seç</span>
+  </div>
+  <span class="sarr">›</span>
+  <div class="step" id="sn1" onclick="goStep(1)">
+    <div class="snum">2</div><span class="slbl">Dijitalleştir & İndir</span>
+  </div>
+</div>
+
+<div id="layout">
+
+<!-- SIDEBAR -->
+<div id="sb">
+  <!-- Prog -->
+  <div>
+    <div style="display:flex;gap:3px;margin-bottom:5px" id="prog-bar"></div>
+    <div style="font-size:10px;color:var(--t3);text-align:center" id="prog-lbl">Görsel yükleyin</div>
+  </div>
+
+  <!-- Corners -->
+  <div class="card">
+    <div class="stitle">Köşe Noktaları</div>
+    <div id="crow-list"></div>
+  </div>
+
+  <!-- Hint -->
+  <div class="hint" id="hint-box">
+    Görsel yükleyin, ardından halının 4 köşesini sırayla işaretleyin.
+  </div>
+
+  <!-- AI btn placeholder -->
+  <div id="ai-area" style="display:none">
+    <button class="btn primary sm" onclick="doAI()" style="width:100%">✦ AI Tahmin Et</button>
+    <div style="font-size:10px;color:var(--t3);margin-top:4px;line-height:1.5">Diğer 3 köşeden paralel kenar formülüyle hesaplar.</div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div class="btn-row">
+      <button class="btn sm danger" onclick="undoLast()" style="flex:1">↩ Geri Al</button>
+      <button class="btn sm danger" onclick="resetAll()" style="flex:1">✕ Sıfırla</button>
+    </div>
+    <button class="btn teal" id="btn-next" disabled onclick="goDigitize()">
+      Dijitalleştir →
+    </button>
+  </div>
+
+  <!-- Nav -->
+  <div style="font-size:10px;color:var(--t3);line-height:1.8;padding:2px 0">
+    <strong style="color:var(--t2)">Gezinme:</strong><br>
+    Tekerlek: zoom &nbsp;·&nbsp; Boşluk+sürükle: kaydır<br>
+    Çift tık: sıfırla &nbsp;·&nbsp; Nokta sürükle: taşı<br>
+    Görsel dışına zoom-out yapıp tıkla
+  </div>
+</div>
+
+<!-- CANVAS (step 0) -->
+<div id="ca">
+  <canvas id="mc"></canvas>
+  <div id="st">Görsel yükleyin</div>
+  <div id="zc">
+    <div class="zb" onclick="zoom(1.25)">+</div>
+    <div class="zb" onclick="zoom(1/1.25)">−</div>
+    <div class="zb" onclick="resetView()" style="font-size:11px">↺</div>
+  </div>
+  <div id="zinfo">100%</div>
+</div>
+
+<!-- RESULT PANEL (step 1) -->
+<div id="rp2">
+<div id="rp2-inner">
+  <div id="rp2-sb">
+    <div class="stitle">Ayarlar</div>
+
+    <div class="card">
+      <div class="stitle">Renk İndirgeme</div>
+      <div class="srow">
+        <label>Renk sayısı</label>
+        <input type="range" id="k-sl" min="2" max="8" step="1" value="4"
+               oninput="document.getElementById('k-v').textContent=this.value">
+        <span class="sv" id="k-v">4</span>
+      </div>
+      <div style="font-size:10px;color:var(--t3);line-height:1.5">Makineler max 8 renk destekler.</div>
+    </div>
+
+    <div class="card">
+      <div class="stitle">Pikselleştirme</div>
+      <div style="margin-bottom:7px">
+        <label style="font-size:11px;color:var(--t2);display:block;margin-bottom:3px">Genişlik (px)</label>
+        <input type="number" id="dp-w" value="400" min="50" max="3000"
+               oninput="onDpWChange(this.value)">
+      </div>
+      <div style="margin-bottom:7px">
+        <label style="font-size:11px;color:var(--t2);display:block;margin-bottom:3px">Yükseklik (px)</label>
+        <input type="number" id="dp-h" value="500" min="50" max="3000"
+               oninput="onDpHChange(this.value)">
+      </div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+        <input type="checkbox" id="dp-lock" checked onchange="onLockChange()"> En/Boy koru
+      </label>
+    </div>
+
+    <div id="dp-prog"><div id="dp-prog-bar"></div></div>
+    <div id="dp-msg"></div>
+
+    <button class="btn primary" onclick="runDigitize()">Yeniden İşle</button>
+    <button class="btn" id="btn-ai-fill" onclick="runAIFill()" style="display:none;border-color:#9370db;color:#7a52c0">✦ AI ile Tamamla</button>
+
+    <div class="card">
+      <div class="stitle" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Renk Paleti</span>
+        <button class="btn sm" onclick="copyAll()">Tümünü Kopyala</button>
+      </div>
+      <div id="swatches"><span style="font-size:11px;color:var(--t3)">—</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn teal sm" onclick="dlOut('png')" style="flex:1">PNG İndir</button>
+      <button class="btn sm" onclick="dlOut('bmp')" style="flex:1">BMP İndir</button>
+    </div>
+    <button class="btn sm" onclick="goStep(0)" style="margin-top:2px">← Köşelere Dön</button>
+  </div>
+
+  <div id="rp2-main">
+    <div class="two-col">
+      <div>
+        <div class="stitle">Perspektif Düzeltilmiş</div>
+        <div class="cv-wrap" style="height:260px">
+          <div class="cv-lbl">Düzeltilmiş</div>
+          <canvas id="cv-warp" style="max-height:260px"></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="stitle">Renk İndirgenmiş</div>
+        <div class="cv-wrap" style="height:260px">
+          <div class="cv-lbl">İndirgenmiş</div>
+          <canvas id="cv-red" style="max-height:260px"></canvas>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="stitle">Pikselleştirilmiş Çıktı</div>
+      <div class="cv-wrap" style="min-height:240px">
+        <div class="cv-lbl">Çıktı</div>
+        <canvas id="cv-out" style="max-width:100%;image-rendering:pixelated"></canvas>
+      </div>
+    </div>
+    <div class="three-col">
+      <div class="stat-box"><div class="val" id="st-w">—</div><div class="lbl">Genişlik</div></div>
+      <div class="stat-box"><div class="val" id="st-h">—</div><div class="lbl">Yükseklik</div></div>
+      <div class="stat-box"><div class="val" id="st-tot">—</div><div class="lbl">Toplam Piksel</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- layout -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const NAMES  = ['Sol Üst','Sağ Üst','Sağ Alt','Sol Alt'];
+const COLORS = ['#e05252','#52a0e0','#52c05a','#e0a052'];
+const HIT_R  = 16;
+
+let imgObj=null, IW=0, IH=0;
+let pts=[null,null,null,null]; // {x,y,mode}
+let active=0, mode='click';
+let sc=1, tx=0, ty=0;
+let spaceDown=false;
+let panning=false, panX0=0,panY0=0,panTx0=0,panTy0=0;
+let dragging=false, dragIdx=-1;
+let outCanvas=null;
+let dpAspect=1;
+
+const canvas=document.getElementById('mc');
+const ctx=canvas.getContext('2d');
+
+// ═══════════════════════════════════════════════════════
+// FILE LOAD
+// ═══════════════════════════════════════════════════════
+document.getElementById('fi').addEventListener('change', e=>{
+  if(e.target.files[0]) loadFile(e.target.files[0]);
+});
+document.getElementById('ca').addEventListener('dragover',e=>e.preventDefault());
+document.getElementById('ca').addEventListener('drop',e=>{
+  e.preventDefault();
+  if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+function loadFile(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      imgObj=img; IW=img.width; IH=img.height;
+      resetAll();
+      resizeCanvas();
+      fitView();
+      setStatus('Sol Üst köşeye tıklayın — zoom-out yapıp görsel dışına da tıklayabilirsiniz');
+    };
+    img.src=ev.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS & VIEW
+// ═══════════════════════════════════════════════════════
+function resizeCanvas(){
+  const ca=document.getElementById('ca');
+  canvas.width=ca.clientWidth;
+  canvas.height=ca.clientHeight;
+  draw();
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+function fitView(){
+  if(!imgObj) return;
+  const cw=canvas.width, ch=canvas.height;
+  sc=Math.min(cw/IW, ch/IH)*0.88;
+  tx=(cw-IW*sc)/2; ty=(ch-IH*sc)/2;
+  updateZLabel(); draw();
+}
+function resetView(){fitView();}
+
+function zoom(f,cx,cy){
+  cx=cx??canvas.width/2; cy=cy??canvas.height/2;
+  const ns=Math.max(0.01,Math.min(40,sc*f));
+  tx=cx-(cx-tx)*(ns/sc); ty=cy-(cy-ty)*(ns/sc);
+  sc=ns; updateZLabel(); draw();
+}
+function updateZLabel(){
+  document.getElementById('zinfo').textContent=Math.round(sc*100)+'%';
+}
+function toS(x,y){return{x:tx+x*sc,y:ty+y*sc};}
+function toI(sx,sy){return{x:(sx-tx)/sc,y:(sy-ty)/sc};}
+
+// ═══════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════
+function draw(){
+  const cw=canvas.width, ch=canvas.height;
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle='#1c1814'; ctx.fillRect(0,0,cw,ch);
+  if(!imgObj) return;
+
+  // Image
+  ctx.drawImage(imgObj,tx,ty,IW*sc,IH*sc);
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
+  ctx.strokeRect(tx,ty,IW*sc,IH*sc);
+
+  // Resolved polygon
+  const res=getResolved();
+  const valid=res.filter(Boolean);
+  if(valid.length>=3){
+    const spts=res.map(p=>p?toS(p.x,p.y):null);
+    ctx.beginPath();
+    let first=true;
+    spts.forEach(sp=>{if(!sp)return;if(first){ctx.moveTo(sp.x,sp.y);first=false;}else ctx.lineTo(sp.x,sp.y);});
+    ctx.closePath();
+    ctx.fillStyle='rgba(160,120,40,.08)'; ctx.fill();
+    ctx.strokeStyle='rgba(160,120,40,.6)'; ctx.lineWidth=1.5;
+    ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Guide lines for outside corners
+  res.forEach((p,i)=>{
+    if(!p||!pts[i]||pts[i].mode!=='outside') return;
+    const sp=toS(p.x,p.y);
+    [( i+3)%4,(i+1)%4].forEach(j=>{
+      const nb=res[j]; if(!nb) return;
+      const snb=toS(nb.x,nb.y);
+      ctx.beginPath(); ctx.moveTo(snb.x,snb.y); ctx.lineTo(sp.x,sp.y);
+      ctx.strokeStyle=COLORS[i]+'55'; ctx.lineWidth=1;
+      ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+    });
+  });
+
+  // Corner points
+  res.forEach((p,i)=>{
+    if(!p) return;
+    const sp=toS(p.x,p.y);
+    const isOut=pts[i]?.mode==='outside';
+    const isAI=pts[i]?.mode==='ai';
+    const isAct=(i===active);
+
+    if(isAct){
+      ctx.beginPath(); ctx.arc(sp.x,sp.y,15,0,Math.PI*2);
+      ctx.strokeStyle=COLORS[i]+'88'; ctx.lineWidth=2;
+      ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    }
+    if(isOut||isAI){
+      ctx.beginPath(); ctx.arc(sp.x,sp.y,13,0,Math.PI*2);
+      ctx.strokeStyle=(isAI?'#9370db':'#e0a052')+'99';
+      ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,9,0,Math.PI*2);
+    ctx.fillStyle=COLORS[i]; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 9px DM Sans,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(i+1,sp.x,sp.y);
+    ctx.fillStyle=COLORS[i]; ctx.font='500 10px DM Sans,sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    const tag=isAI?' (AI)':isOut?' (dışı)':'';
+    ctx.fillText(NAMES[i]+tag,sp.x+13,sp.y-4);
+    ctx.fillStyle='rgba(255,255,255,.45)'; ctx.font='9px monospace';
+    ctx.fillText('('+Math.round(p.x)+','+Math.round(p.y)+')',sp.x+13,sp.y+8);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// CORNERS
+// ═══════════════════════════════════════════════════════
+function getResolved(){
+  const res=pts.map(p=>p?{x:p.x,y:p.y}:null);
+  // AI corners: parallelogram rule
+  for(let i=0;i<4;i++){
+    if(!pts[i]||pts[i].mode!=='ai') continue;
+    const a=res[(i+1)%4], b=res[(i+2)%4], c=res[(i+3)%4];
+    if(a&&b&&c) res[i]={x:a.x-b.x+c.x, y:a.y-b.y+c.y};
+    else if(a&&c) res[i]={x:(a.x+c.x)/2, y:(a.y+c.y)/2};
+  }
+  return res;
+}
+
+function placeCorner(i,x,y,m){
+  pts[i]={x,y,mode:m};
+  checkDone();
+  const nxt=pts.findIndex((p,j)=>j>i&&!p);
+  if(nxt>=0) active=nxt;
+  else{const f=pts.findIndex(p=>!p);if(f>=0)active=f;}
+  updateUI(); draw();
+}
+
+function doAI(){
+  const i=active;
+  const a=pts[(i+1)%4],b=pts[(i+2)%4],c=pts[(i+3)%4];
+  if(!(a&&b&&c)){setStatus('AI için önce diğer 3 köşeyi işaretleyin.');return;}
+  pts[i]={x:a.x-b.x+c.x, y:a.y-b.y+c.y, mode:'ai'};
+  checkDone(); updateUI(); draw();
+  setStatus('AI tahmini uygulandı. Noktayı sürükleyerek düzeltebilirsiniz.');
+}
+
+function checkDone(){
+  if(pts.every(Boolean)){
+    document.getElementById('btn-next').disabled=false;
+    setStatus('Tüm köşeler hazır! "Dijitalleştir" butonuna basın.');
+  }
+}
+
+function undoLast(){
+  for(let i=3;i>=0;i--){if(pts[i]){pts[i]=null;active=i;document.getElementById('btn-next').disabled=true;updateUI();draw();return;}}
+}
+
+function resetAll(){
+  pts=[null,null,null,null]; active=0;
+  document.getElementById('btn-next').disabled=true;
+  updateUI(); draw();
+  if(imgObj) setStatus('Sol Üst köşeye tıklayın');
+}
+
+function setStatus(t){document.getElementById('st').textContent=t;}
+
+// ═══════════════════════════════════════════════════════
+// MOUSE / TOUCH
+// ═══════════════════════════════════════════════════════
+function getPos(e){
+  const r=canvas.getBoundingClientRect();
+  return{x:e.clientX-r.left, y:e.clientY-r.top};
+}
+
+canvas.addEventListener('mousedown',e=>{
+  const{x:sx,y:sy}=getPos(e);
+  if(spaceDown||e.button===1){
+    panning=true; panX0=sx;panY0=sy;panTx0=tx;panTy0=ty;
+    canvas.style.cursor='grabbing'; e.preventDefault(); return;
+  }
+  if(e.button!==0) return;
+  // Hit existing
+  for(let i=0;i<4;i++){
+    const p=pts[i]; if(!p) continue;
+    const sp=toS(p.x,p.y);
+    if(Math.hypot(sx-sp.x,sy-sp.y)<HIT_R){
+      active=i; updateUI(); dragging=true; dragIdx=i;
+      canvas.style.cursor='grabbing'; return;
+    }
+  }
+  // Place
+  if(!imgObj||mode==='ai') return;
+  const ip=toI(sx,sy);
+  const m=(ip.x<0||ip.x>IW||ip.y<0||ip.y>IH)?'outside':'click';
+  placeCorner(active,ip.x,ip.y,m);
+});
+
+document.addEventListener('mousemove',e=>{
+  const{x:sx,y:sy}=getPos(e);
+  if(panning){tx=panTx0+(sx-panX0);ty=panTy0+(sy-panY0);draw();return;}
+  if(dragging&&dragIdx>=0){
+    const ip=toI(sx,sy);
+    const m=(ip.x<0||ip.x>IW||ip.y<0||ip.y>IH)?'outside':(pts[dragIdx]?.mode||'click');
+    pts[dragIdx]={x:ip.x,y:ip.y,mode:m};
+    draw(); updateCornerRow(dragIdx); return;
+  }
+  // Cursor
+  let over=false;
+  for(let i=0;i<4;i++){
+    const p=pts[i]; if(!p) continue;
+    const sp=toS(p.x,p.y);
+    if(Math.hypot(sx-sp.x,sy-sp.y)<HIT_R){over=true;break;}
+  }
+  if(!spaceDown) canvas.style.cursor=over?'grab':'crosshair';
+});
+
+document.addEventListener('mouseup',()=>{
+  if(dragging){dragging=false;dragIdx=-1;canvas.style.cursor='crosshair';checkDone();updateUI();}
+  if(panning){panning=false;canvas.style.cursor=spaceDown?'grab':'crosshair';}
+});
+
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const{x,y}=getPos(e);
+  zoom(e.deltaY<0?1.12:1/1.12,x,y);
+},{passive:false});
+
+canvas.addEventListener('dblclick',resetView);
+
+document.addEventListener('keydown',e=>{if(e.code==='Space'){spaceDown=true;canvas.style.cursor='grab';e.preventDefault();}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;canvas.style.cursor='crosshair';}});
+
+// ═══════════════════════════════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════════════════════════════
+function buildCrows(){
+  const list=document.getElementById('crow-list');
+  list.innerHTML='';
+  for(let i=0;i<4;i++){
+    const d=document.createElement('div');
+    d.id='cr-'+i; d.className='crow';
+    d.innerHTML=`<div class="cdot" style="background:${COLORS[i]}"></div><span class="clbl">${NAMES[i]}</span><span class="cval" id="cv-${i}"></span><span class="ctag" id="ct-${i}"></span>`;
+    d.onclick=()=>{active=i;mode='click';updateUI();draw();};
+    list.appendChild(d);
+  }
+}
+buildCrows();
+
+function updateCornerRow(i){
+  const p=pts[i];
+  const row=document.getElementById('cr-'+i);
+  const val=document.getElementById('cv-'+i);
+  const tag=document.getElementById('ct-'+i);
+  row.className='crow';
+  if(p){
+    val.textContent=Math.round(p.x)+','+Math.round(p.y);
+    if(p.mode==='ai'){row.classList.add('ai-mode');tag.className='ctag ai';tag.textContent='AI';}
+    else if(p.mode==='outside'){row.classList.add('outside');tag.className='ctag out';tag.textContent='dışı';}
+    else{row.classList.add('set');tag.className='ctag set';tag.textContent='✓';}
+  } else {
+    val.textContent=''; tag.className='ctag';
+    if(i===active){row.classList.add('active');tag.className='ctag act';tag.textContent='←';}
+    else{tag.textContent='—';}
+  }
+}
+
+function updateUI(){
+  for(let i=0;i<4;i++) updateCornerRow(i);
+  // AI area
+  const aiArea=document.getElementById('ai-area');
+  aiArea.style.display=(mode==='ai')?'block':'none';
+  // Progress
+  const pb=document.getElementById('prog-bar');
+  pb.innerHTML='';
+  let cnt=0;
+  for(let i=0;i<4;i++){
+    const d=document.createElement('div');
+    d.style.cssText='flex:1;height:3px;border-radius:2px;background:var(--b2)';
+    if(pts[i]){cnt++;d.style.background='var(--teal)';}
+    else if(i===active) d.style.background='var(--gold)';
+    pb.appendChild(d);
+  }
+  document.getElementById('prog-lbl').textContent=cnt+'/4 köşe';
+  // Hint
+  const hints=[
+    'Sol Üst köşeye tıklayın. Görünmüyorsa zoom-out yapıp görsel dışına tıklayın.',
+    'Sağ Üst köşeye tıklayın.',
+    'Sağ Alt köşeye tıklayın. Görsel dışına çıkabilirsiniz.',
+    'Sol Alt köşeye tıklayın. Görsel dışına çıkabilirsiniz.',
+  ];
+  if(!pts.every(Boolean)&&active<4)
+    document.getElementById('hint-box').innerHTML=`<strong>${NAMES[active]}:</strong> ${hints[active]}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// STEP NAV
+// ═══════════════════════════════════════════════════════
+function goStep(i){
+  document.querySelectorAll('.step').forEach((s,j)=>s.classList.toggle('active',j===i));
+  document.getElementById('rp2').style.display=i===1?'block':'none';
+  if(i===0) canvas.style.display='block';
+}
+
+function goDigitize(){
+  // Unlock step 1
+  const sn1=document.getElementById('sn1');
+  sn1.classList.add('unlock','done');
+  goStep(1);
+  // Auto-calculate output size
+  const res=getResolved();
+  const topW=Math.hypot(res[1].x-res[0].x,res[1].y-res[0].y);
+  const leftH=Math.hypot(res[3].x-res[0].x,res[3].y-res[0].y);
+  const botW=Math.hypot(res[2].x-res[3].x,res[2].y-res[3].y);
+  const rightH=Math.hypot(res[2].x-res[1].x,res[2].y-res[1].y);
+  const avgW=(topW+botW)/2, avgH=(leftH+rightH)/2;
+  const scale=Math.min(1.0, 1000/Math.max(avgW,avgH));
+  const ow=Math.max(50,Math.round(avgW*scale));
+  const oh=Math.max(50,Math.round(avgH*scale));
+  dpAspect=ow/oh;
+  document.getElementById('dp-w').value=ow;
+  document.getElementById('dp-h').value=oh;
+  runDigitize();
+}
+
+// ═══════════════════════════════════════════════════════
+// HOMOGRAPHY
+// ═══════════════════════════════════════════════════════
+function gaussSolve(A,b){
+  const n=8;
+  const M=A.map((row,i)=>[...row,b[i]]);
+  for(let col=0;col<n;col++){
+    let maxR=col,maxV=Math.abs(M[col][col]);
+    for(let r=col+1;r<n;r++) if(Math.abs(M[r][col])>maxV){maxV=Math.abs(M[r][col]);maxR=r;}
+    [M[col],M[maxR]]=[M[maxR],M[col]];
+    const piv=M[col][col];
+    if(Math.abs(piv)<1e-14) continue;
+    for(let c=col;c<=n;c++) M[col][c]/=piv;
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const f=M[r][col];
+      for(let c=col;c<=n;c++) M[r][c]-=f*M[col][c];
+    }
+  }
+  return M.map(r=>r[n]);
+}
+
+function computeH(src,dst){
+  // dst→src: H @ [dx,dy,1] = [sx,sy,w]
+  const A=[],b=[];
+  for(let i=0;i<4;i++){
+    const sx=src[i][0],sy=src[i][1],dx=dst[i][0],dy=dst[i][1];
+    A.push([dx,dy,1,0,0,0,-sx*dx,-sx*dy]); b.push(sx);
+    A.push([0,0,0,dx,dy,1,-sy*dx,-sy*dy]); b.push(sy);
+  }
+  const h=gaussSolve(A,b);
+  return[[h[0],h[1],h[2]],[h[3],h[4],h[5]],[h[6],h[7],1]];
+}
+
+function applyH(H,x,y){
+  const w=H[2][0]*x+H[2][1]*y+H[2][2];
+  if(Math.abs(w)<1e-10) return[0,0];
+  return[(H[0][0]*x+H[0][1]*y+H[0][2])/w,(H[1][0]*x+H[1][1]*y+H[1][2])/w];
+}
+
+// ═══════════════════════════════════════════════════════
+// DIGITIZE PIPELINE
+// ═══════════════════════════════════════════════════════
+function setDP(pct,msg){
+  document.getElementById('dp-prog-bar').style.width=pct+'%';
+  document.getElementById('dp-msg').textContent=msg;
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function runDigitize(){
+  if(!imgObj){alert('Önce görsel yükleyin.');return;}
+
+  const res=getResolved();
+  const outW=Math.max(50,parseInt(document.getElementById('dp-w').value)||400);
+  const outH=Math.max(50,parseInt(document.getElementById('dp-h').value)||500);
+  const k=parseInt(document.getElementById('k-sl').value)||4;
+
+  setDP(5,'Görsel okunuyor…'); await sleep(10);
+
+  // ── Kaynak pikselleri oku (OffscreenCanvas kullan) ──
+  // CORS sorununu önlemek için blob URL kullan
+  let srcData;
+  try {
+    const tmp=document.createElement('canvas');
+    tmp.width=IW; tmp.height=IH;
+    const tc=tmp.getContext('2d');
+    tc.drawImage(imgObj,0,0);
+    srcData=tc.getImageData(0,0,IW,IH).data;
+  } catch(e) {
+    // CORS hatası — data URL'den yeniden yükle
+    setDP(5,'Görsel yeniden yükleniyor…');
+    await sleep(10);
+    srcData=await getPixelsDirect();
+    if(!srcData){setDP(0,'Hata: Görsel okunamadı.');return;}
+  }
+
+  setDP(10,'Homography hesaplanıyor…'); await sleep(10);
+
+  // ── Homography ──
+  const srcPts=res.map(p=>[p.x,p.y]);
+  const dstPts=[[0,0],[outW,0],[outW,outH],[0,outH]];
+  const H=computeH(srcPts,dstPts);
+
+  setDP(15,'Warp uygulanıyor…'); await sleep(10);
+
+  // ── Warp (bilinear) — sınır dışı = siyah ──
+  const warpCv=document.createElement('canvas');
+  warpCv.width=outW; warpCv.height=outH;
+  const wCtx=warpCv.getContext('2d');
+  const wId=wCtx.createImageData(outW,outH);
+  const wd=wId.data;
+  // Siyah maske: 1=siyah(doldurulacak), 0=geçerli piksel
+  const blackMask=new Uint8Array(outW*outH);
+
+  for(let dy=0;dy<outH;dy++){
+    for(let dx=0;dx<outW;dx++){
+      const[sx,sy]=applyH(H,dx,dy);
+      const di=(dy*outW+dx)*4;
+      // Görsel sınırı dışında → siyah bırak
+      if(sx<0||sx>=IW-1||sy<0||sy>=IH-1){
+        wd[di]=0;wd[di+1]=0;wd[di+2]=0;wd[di+3]=255;
+        blackMask[dy*outW+dx]=1;
+        continue;
+      }
+      const x0=Math.floor(sx), y0=Math.floor(sy);
+      const x1=x0+1, y1=y0+1;
+      const wx=sx-x0, wy=sy-y0;
+      const xA=Math.max(0,Math.min(IW-1,x0)), yA=Math.max(0,Math.min(IH-1,y0));
+      const xB=Math.max(0,Math.min(IW-1,x1)), yB=Math.max(0,Math.min(IH-1,y1));
+      const s00=(yA*IW+xA)*4, s10=(yA*IW+xB)*4;
+      const s01=(yB*IW+xA)*4, s11=(yB*IW+xB)*4;
+      for(let ch=0;ch<3;ch++){
+        wd[di+ch]=Math.round(
+          srcData[s00+ch]*(1-wx)*(1-wy)+srcData[s10+ch]*wx*(1-wy)+
+          srcData[s01+ch]*(1-wx)*wy    +srcData[s11+ch]*wx*wy
+        );
+      }
+      wd[di+3]=255;
+    }
+    if(dy%80===0){setDP(15+Math.round(dy/outH*35),`Warp ${Math.round(dy/outH*100)}%…`);await sleep(0);}
+  }
+  wCtx.putImageData(wId,0,0);
+  // Warp data & mask global olarak sakla (AI tamamlama için)
+  window._warpData=new Uint8ClampedArray(wd);
+  window._blackMask=blackMask;
+  window._warpW=outW; window._warpH=outH;
+
+  const cvW=document.getElementById('cv-warp');
+  cvW.width=outW; cvW.height=outH;
+  cvW.getContext('2d').putImageData(wId,0,0);
+
+  setDP(55,'Renk indirgeme (K-Means)…'); await sleep(10);
+
+  // ── warpId'yi yeniden oku — wd referansı stale olabilir ──
+  const warpData = wCtx.getImageData(0, 0, outW, outH).data;
+
+  // ── K-Means — sadece görünen pikselleri örnekle ──
+  const sample=[];
+  const sampleStep=Math.max(1,Math.floor(outW*outH/5000));
+  for(let i=0;i<outW*outH;i+=sampleStep){
+    if(!blackMask[i]) sample.push([warpData[i*4],warpData[i*4+1],warpData[i*4+2]]);
+  }
+  const palette=kMeans(sample,k,25);
+
+  setDP(80,'Renkleri eşleştiriyor…'); await sleep(10);
+
+  // ── Map to palette ──
+  const rId=new ImageData(outW,outH);
+  const rd=rId.data;
+  for(let i=0;i<outW*outH;i++){
+    const di=i*4;
+    if(blackMask[i]){
+      rd[di]=0;rd[di+1]=0;rd[di+2]=0;rd[di+3]=255;
+      continue;
+    }
+    const r=warpData[di],g=warpData[di+1],b=warpData[di+2];
+    let best=0,bd=Infinity;
+    for(let ci=0;ci<palette.length;ci++){
+      const d=(r-palette[ci][0])**2+(g-palette[ci][1])**2+(b-palette[ci][2])**2;
+      if(d<bd){bd=d;best=ci;}
+    }
+    rd[di]=palette[best][0];rd[di+1]=palette[best][1];rd[di+2]=palette[best][2];rd[di+3]=255;
+  }
+  // Global sakla (AI için)
+  window._reducedData=new Uint8ClampedArray(rd);
+  window._palette=palette;
+  window._blackMaskRed=new Uint8Array(blackMask); // same mask applies
+  const redCv=document.createElement('canvas');
+  redCv.width=outW;redCv.height=outH;
+  redCv.getContext('2d').putImageData(rId,0,0);
+  document.getElementById('cv-red').width=outW;
+  document.getElementById('cv-red').height=outH;
+  document.getElementById('cv-red').getContext('2d').putImageData(rId,0,0);
+
+  // ── Pixelated output display ──
+  outCanvas=redCv;
+  const cvOut=document.getElementById('cv-out');
+  cvOut.width=outW; cvOut.height=outH;
+  cvOut.getContext('2d').putImageData(rId,0,0);
+  const dispScale=Math.max(1,Math.floor(700/Math.max(outW,outH)));
+  cvOut.style.width=(outW*dispScale)+'px';
+
+  // Stats
+  document.getElementById('st-w').textContent=outW+'px';
+  document.getElementById('st-h').textContent=outH+'px';
+  document.getElementById('st-tot').textContent=(outW*outH).toLocaleString('tr-TR');
+
+  // Swatches
+  buildSwatches(rd,outW*outH,palette);
+
+  setDP(100,`Tamamlandı — ${outW}×${outH}px, ${k} renk`);
+  const hasBlack=blackMask.some(v=>v===1);
+  document.getElementById('btn-ai-fill').style.display=hasBlack?'block':'none';
+}
+
+async function getPixelsDirect(){
+  // Blob URL yöntemi ile CORS'u bypass et
+  return new Promise(resolve=>{
+    const cv=document.createElement('canvas');
+    cv.width=IW; cv.height=IH;
+    const tc=cv.getContext('2d');
+    const img2=new Image();
+    img2.crossOrigin='anonymous';
+    img2.onload=()=>{
+      tc.drawImage(img2,0,0);
+      try{resolve(tc.getImageData(0,0,IW,IH).data);}
+      catch{resolve(null);}
+    };
+    img2.onerror=()=>resolve(null);
+    img2.src=imgObj.src;
+  });
+}
+
+// ── K-Means ──
+function kMeans(pixels,k,iters){
+  let centers=[],used=new Set();
+  while(centers.length<k){
+    const i=Math.floor(Math.random()*pixels.length);
+    if(!used.has(i)){used.add(i);centers.push([...pixels[i]]);}
+  }
+  for(let it=0;it<iters;it++){
+    const clusters=Array.from({length:k},()=>[]);
+    pixels.forEach(p=>{
+      let b=0,bd=Infinity;
+      centers.forEach((c,ci)=>{const d=(p[0]-c[0])**2+(p[1]-c[1])**2+(p[2]-c[2])**2;if(d<bd){bd=d;b=ci;}});
+      clusters[b].push(p);
+    });
+    const nc=clusters.map((cl,i)=>{
+      if(!cl.length) return centers[i];
+      return[cl.reduce((s,p)=>s+p[0],0)/cl.length,
+             cl.reduce((s,p)=>s+p[1],0)/cl.length,
+             cl.reduce((s,p)=>s+p[2],0)/cl.length];
+    });
+    let changed=false;
+    nc.forEach((c,i)=>{if(Math.abs(c[0]-centers[i][0])>.5||Math.abs(c[1]-centers[i][1])>.5||Math.abs(c[2]-centers[i][2])>.5) changed=true;});
+    centers=nc; if(!changed) break;
+  }
+  return centers.map(c=>c.map(v=>Math.round(v)));
+}
+
+function rgbHex(r,g,b){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
+
+function buildSwatches(data,total,palette){
+  const counts=new Array(palette.length).fill(0);
+  for(let i=0;i<data.length;i+=4){
+    let best=0,bd=Infinity;
+    palette.forEach((c,ci)=>{const d=(data[i]-c[0])**2+(data[i+1]-c[1])**2+(data[i+2]-c[2])**2;if(d<bd){bd=d;best=ci;}});
+    counts[best]++;
+  }
+  const sorted=palette.map((c,i)=>({c,pct:(counts[i]/total*100).toFixed(1)})).sort((a,b)=>parseFloat(b.pct)-parseFloat(a.pct));
+  const el=document.getElementById('swatches');
+  el.innerHTML='';
+  sorted.forEach(({c,pct})=>{
+    const hex=rgbHex(c[0],c[1],c[2]);
+    const d=document.createElement('div');
+    d.className='sw-item'; d.title='Kopyala: '+hex;
+    d.innerHTML=`<div class="sw-dot" style="background:${hex}"></div><span class="sw-hex">${hex}</span><span class="sw-pct">${pct}%</span><span class="copy-b">kopyala</span>`;
+    d.onclick=()=>{navigator.clipboard?.writeText(hex);d.querySelector('.copy-b').textContent='✓';setTimeout(()=>d.querySelector('.copy-b').textContent='kopyala',1500);};
+    el.appendChild(d);
+  });
+}
+
+function copyAll(){
+  const hexes=[...document.querySelectorAll('.sw-hex')].map(e=>e.textContent);
+  navigator.clipboard?.writeText(hexes.join('\n'));
+}
+
+// ── Aspect ratio ──
+function onDpWChange(v){
+  if(document.getElementById('dp-lock').checked)
+    document.getElementById('dp-h').value=Math.round(parseInt(v)/dpAspect)||1;
+}
+function onDpHChange(v){
+  if(document.getElementById('dp-lock').checked)
+    document.getElementById('dp-w').value=Math.round(parseInt(v)*dpAspect)||1;
+}
+function onLockChange(){
+  const w=parseInt(document.getElementById('dp-w').value)||400;
+  const h=parseInt(document.getElementById('dp-h').value)||500;
+  dpAspect=w/h;
+}
+
+// ═══════════════════════════════════════════════════════
+// AI TAMAMLAMA — Koordinat bazlı doku devamı
+// ═══════════════════════════════════════════════════════
+async function runAIFill(){
+  if(!window._reducedData){alert('Önce dijitalleştirme yapın.');return;}
+  const W=window._warpW, H=window._warpH;
+  const data=new Uint8ClampedArray(window._reducedData);
+  const mask=new Uint8Array(window._blackMaskRed);
+  const palette=window._palette;
+
+  const blackCount=mask.reduce((s,v)=>s+v,0);
+  if(blackCount===0){setDP(100,'Tamamlanacak alan yok.');return;}
+  setDP(5,`${blackCount} piksel analiz ediliyor…`); await sleep(20);
+
+  // ── ADIM 1: Desen periyodunu ölç ─────────────────────
+  // Her sütun için: aynı x'te yukarı çıkınca ilk görünen piksel nerede?
+  // Siyah alan genellikle köşede — görünen kısımda aynı koordinat var mı kontrol et
+
+  // Görünen kısımdan autocorrelation ile yatay+dikey periyot bul
+  // Yatay profil: orta satır
+  const midRow = Math.floor(H/2);
+  let rowSig=[], colSig=[];
+  for(let x=0;x<W;x++){
+    const i=(midRow*W+x)*4;
+    rowSig.push(mask[midRow*W+x]?-1:(data[i]*0.299+data[i+1]*0.587+data[i+2]*0.114));
+  }
+  // Dikey profil: orta sütun
+  const midCol=Math.floor(W/2);
+  for(let y=0;y<H;y++){
+    const i=(y*W+midCol)*4;
+    colSig.push(mask[y*W+midCol]?-1:(data[i]*0.299+data[i+1]*0.587+data[i+2]*0.114));
+  }
+
+  // Autocorrelation ile periyot bul
+  function findPeriod(sig, minP=8, maxP=Math.floor(sig.length/3)){
+    const valid=sig.filter(v=>v>=0);
+    if(valid.length<minP*2) return 0;
+    const mean=valid.reduce((a,b)=>a+b,0)/valid.length;
+    let bestP=0, bestScore=-Infinity;
+    for(let p=minP;p<maxP;p++){
+      let score=0, cnt=0;
+      for(let i=0;i<sig.length-p;i++){
+        if(sig[i]<0||sig[i+p]<0) continue;
+        score-=(sig[i]-sig[i+p])**2;
+        cnt++;
+      }
+      if(cnt>sig.length/4 && score/cnt>bestScore){bestScore=score/cnt;bestP=p;}
+    }
+    return bestP;
+  }
+
+  setDP(15,'Desen periyodu hesaplanıyor…'); await sleep(10);
+  const periodX=findPeriod(rowSig);
+  const periodY=findPeriod(colSig);
+  setDP(20,`Periyot: ${periodX}x${periodY}px — doku kopyalanıyor…`); await sleep(10);
+
+  // ── ADIM 2: Her siyah piksel için kaynak bul ─────────
+  // Öncelik: aynı sütunda üstten en yakın görünen piksel
+  // Fallback: periyotla öteleme, sonra patch arama
+
+  function mapToPalette(r,g,b){
+    let best=0,bd=Infinity;
+    for(let ci=0;ci<palette.length;ci++){
+      const d=(r-palette[ci][0])**2+(g-palette[ci][1])**2+(b-palette[ci][2])**2;
+      if(d<bd){bd=d;best=ci;}
+    }
+    return best;
+  }
+
+  function setPixel(idx,r,g,b){
+    const ci=mapToPalette(r,g,b);
+    const di=idx*4;
+    data[di]=palette[ci][0];data[di+1]=palette[ci][1];
+    data[di+2]=palette[ci][2];data[di+3]=255;
+    mask[idx]=0;
+  }
+
+  // Geçiş 1: Periyotla öteleme — aynı (x mod periodX, y mod periodY) konumundaki görünen piksel
+  let filled=0;
+  if(periodX>0||periodY>0){
+    const px=periodX||periodY, py=periodY||periodX;
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+      const idx=y*W+x; if(!mask[idx]) continue;
+      // Birkaç periyot uzağa bak
+      let found=false;
+      for(let mult=1;mult<=8&&!found;mult++){
+        for(const[dy,dx] of [[0,mult*px],[0,-mult*px],[mult*py,0],[-mult*py,0],
+                              [mult*py,mult*px],[-mult*py,-mult*px]]){
+          const sy=y+dy, sx=x+dx;
+          if(sy<0||sy>=H||sx<0||sx>=W) continue;
+          if(mask[sy*W+sx]) continue;
+          const si=(sy*W+sx)*4;
+          setPixel(idx,data[si],data[si+1],data[si+2]);
+          filled++; found=true; break;
+        }
+      }
+    }
+    setDP(50,`Periyot ile ${filled} piksel dolduruldu…`); await sleep(10);
+  }
+
+  // Geçiş 2: Kalan siyah pikseller — aynı sütunda en yakın görünen piksel (yukarı/aşağı)
+  let filled2=0;
+  for(let x=0;x<W;x++){
+    for(let y=0;y<H;y++){
+      const idx=y*W+x; if(!mask[idx]) continue;
+      // Yukarı bak
+      for(let dy=1;dy<H;dy++){
+        const sy=y-dy; if(sy<0) break;
+        if(!mask[sy*W+x]){
+          const si=(sy*W+x)*4;
+          setPixel(idx,data[si],data[si+1],data[si+2]);
+          filled2++; break;
+        }
+      }
+    }
+  }
+  setDP(70,`Sütun devamı ile ${filled2} piksel daha…`); await sleep(10);
+
+  // Geçiş 3: Hâlâ kalan siyah — aynı satırda en yakın görünen piksel (sağ/sol)
+  let filled3=0;
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const idx=y*W+x; if(!mask[idx]) continue;
+      for(let dx=1;dx<W;dx++){
+        const sx=x+dx; if(sx>=W) break;
+        if(!mask[y*W+sx]){
+          const si=(y*W+sx)*4;
+          setPixel(idx,data[si],data[si+1],data[si+2]);
+          filled3++; break;
+        }
+      }
+    }
+  }
+  setDP(90,`Satır devamı ile ${filled3} piksel daha…`); await sleep(10);
+
+  const totalFilled=filled+filled2+filled3;
+  setDP(100,`Tamamlandı — ${totalFilled} piksel (periyot: ${periodX}×${periodY})`);
+
+  // Ekranı güncelle
+  window._reducedData=data; window._blackMaskRed=mask;
+  const rId=new ImageData(W,H); rId.data.set(data);
+  const redCv=document.createElement('canvas');
+  redCv.width=W;redCv.height=H;redCv.getContext('2d').putImageData(rId,0,0);
+  document.getElementById('cv-red').width=W;document.getElementById('cv-red').height=H;
+  document.getElementById('cv-red').getContext('2d').putImageData(rId,0,0);
+  outCanvas=redCv;
+  const cvOut=document.getElementById('cv-out');
+  cvOut.width=W;cvOut.height=H;cvOut.getContext('2d').putImageData(rId,0,0);
+  cvOut.style.width=(W*Math.max(1,Math.floor(700/Math.max(W,H))))+'px';
+}
+function dlOut(fmt){
+  if(!outCanvas) return;
+  const a=document.createElement('a');
+  a.download='hali-dijital.'+fmt;
+  a.href=outCanvas.toDataURL('image/png');
+  a.click();
+}
+
+// ── Init ──
+updateUI();
+</script>
+</body>
+</html>
